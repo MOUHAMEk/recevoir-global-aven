@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réception de l'avancement des travaux</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            font-size: 30px;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            text-transform: uppercase;
+            width: 100%;
+        }
+
+        main {
+            margin-top: 50px;
+            text-align: center;
+            width: 80%;
+        }
+
+        select, p {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #bdc3c7;
+            border-radius: 10px;
+        }
+
+        p {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 18px;
+            background-color: #2980b9;
+            color: white;
+            padding: 20px;
+            width: 100%;
+            margin-top: 40px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Réception de l'avancement des travaux</h1>
+    </header>
+
+    <main>
+        <label for="day">Sélectionnez un jour:</label>
+        <select id="day"></select>
+
+        <label for="floor">Sélectionnez un étage:</label>
+        <select id="floor"></select>
+
+        <div id="progress-info">
+            <p id="columns-progress">Avancement des poteaux: </p>
+            <p id="beams-progress">Avancement des poutres: </p>
+            <p id="slab-progress">Avancement du plancher: </p>
+            <p id="elevators-progress">Avancement des ascenseurs: </p>
+            <p id="stairs-progress">Avancement des escaliers: </p>
+            <p id="overall-progress">Avancement global: </p>
+        </div>
+    </main>
+
+    <footer>
+        MArisk
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOA0a_rjXqY99KXyyuHEiPOJDGGapZQUo",
+            authDomain: "suivi-49954.firebaseapp.com",
+            databaseURL: "https://suivi-49954-default-rtdb.firebaseio.com",
+            projectId: "suivi-49954",
+            storageBucket: "suivi-49954.appspot.com",
+            messagingSenderId: "141836603566",
+            appId: "1:141836603566:web:aaff934468238d958cdd3f",
+            measurementId: "G-3CMYEPPYK8"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Generate days for September and October 2024
+        function generateDays() {
+            const daySelect = document.getElementById('day');
+            for (let month = 9; month <= 10; month++) {
+                const daysInMonth = new Date(2024, month, 0).getDate();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(2024, month - 1, day);
+                    const dateString = date.toISOString().split('T')[0];
+                    const option = document.createElement('option');
+                    option.value = dateString;
+                    option.textContent = `${day} ${month === 9 ? 'Septembre' : 'Octobre'} 2024`;
+                    daySelect.appendChild(option);
+                }
+            }
+        }
+
+        // Generate floors
+        function generateFloors() {
+            const floorSelect = document.getElementById('floor');
+            const floors = ['RDC', 'R+1', 'R+2', 'R+3', 'R+4'];
+            floors.forEach(floor => {
+                const option = document.createElement('option');
+                option.value = floor;
+                option.textContent = floor;
+                floorSelect.appendChild(option);
+            });
+        }
+
+        // Initialize page
+        function initializePage() {
+            generateDays();
+            generateFloors();
+        }
+
+        initializePage();
+
+        // Function to display progress data
+        function displayProgress(data) {
+            document.getElementById('columns-progress').innerText = `Avancement des poteaux: ${data.columnsProgress}%`;
+            document.getElementById('beams-progress').innerText = `Avancement des poutres: ${data.beamsProgress}%`;
+            document.getElementById('slab-progress').innerText = `Avancement du plancher: ${data.slabProgress}%`;
+            document.getElementById('elevators-progress').innerText = `Avancement des ascenseurs: ${data.elevatorsProgress}%`;
+            document.getElementById('stairs-progress').innerText = `Avancement des escaliers: ${data.stairsProgress}%`;
+            document.getElementById('overall-progress').innerText = `Avancement global: ${data.overallProgress}%`;
+        }
+
+        // Event listener for fetching and displaying data
+        document.getElementById('day').addEventListener('change', fetchAndDisplayData);
+        document.getElementById('floor').addEventListener('change', fetchAndDisplayData);
+
+        function fetchAndDisplayData() {
+            const day = document.getElementById('day').value;
+            const floor = document.getElementById('floor').value;
+
+            if (day && floor) {
+                firebase.database().ref('site1/').orderByChild('day').equalTo(day).once('value', snapshot => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const floorData = Object.values(data).find(item => item.floor === floor);
+                        if (floorData) {
+                            displayProgress(floorData);
+                        } else {
+                            alert('Aucune donnée trouvée pour cet étage.');
+                            document.getElementById('progress-info').reset();
+                        }
+                    } else {
+                        alert('Aucune donnée trouvée pour cette date.');
+                        document.getElementById('progress-info').reset();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
